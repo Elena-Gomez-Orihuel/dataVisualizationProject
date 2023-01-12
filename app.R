@@ -1,6 +1,7 @@
 library(shiny)
 library(readr)
 library(ggplot2)
+library(base)
 
 #read the data 
 
@@ -25,7 +26,8 @@ ui <- fluidPage(
       h1("Analysis"),
       br(),
       uiOutput("varSelect"),
-      plotOutput("histogram")
+      plotOutput("univariatePlot"), 
+
     )
   )
 )
@@ -41,14 +43,33 @@ server <- function(input, output) {
   
   observeEvent(input$univariate, {
   #code for when univariate button is pressed
+    
   output$varSelect <- renderUI({
     selectInput("variable", "Select a variable", choices = colnames(data()))
   })
   
-  output$histogram <- renderPlot({
+
+  output$univariatePlot <- renderPlot({
+    #histograms are plotted for continuous variables only
+    if(input$variable %in% c("age","trestbps", "chol", "thalac", "oldpeak")) { 
     req(input$variable)
     ggplot(data(), aes_string(x = input$variable)) +
-      geom_histogram()
+      geom_histogram(binwidth = 1, color = "white", fill = "blue", boundary = 0, bins = input$bins) +
+      scale_x_continuous(limits = c(min(data()[[input$variable]]), max(data()[[input$variable]])))
+    }
+    else if(input$variable %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
+      ggplot(data(), aes(x = factor(input$variable))) +
+        geom_bar(aes(group=factor(input$variable)), stat = "count", fill = "blue")
+      
+    }
+  })
+  
+  output$barplot <- renderPlot({
+    #histograms are plotted for continuous variables only
+    if(input$variable %in% c("age","trestbps", "chol", "thalac", "oldpeak")) return(NULL) 
+    #ggplot(data(), aes(x = input$variable)) +
+     #geom_bar(stat = "count")
+    barplot(input$variable, main = paste("Bar chart of",toString(input$variable)), xlab = toString(input$variable), ylab = "Count", col = "blue")
   })
   
   })
@@ -57,6 +78,10 @@ server <- function(input, output) {
     # bivariate analysis code
   })
 }
+
+
+  
+
 
 # Run the app ----
 shinyApp(ui = ui, server = server)
