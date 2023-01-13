@@ -1,12 +1,7 @@
 library(shiny)
 library(readr)
 library(ggplot2)
-<<<<<<< HEAD
 library(shinydashboard)
-=======
-library(base)
-
->>>>>>> adea3543096985ec057003e646847a9b51a2f57a
 #read the data 
 ui <- dashboardPage(
   dashboardHeader(),
@@ -86,7 +81,6 @@ shinyApp(ui, server)
 #      br(),
 #      actionButton("multivariate", "Multidimensional")
 
-<<<<<<< HEAD
 #    ),
 #    mainPanel(
 #      h1("Analysis"),
@@ -96,18 +90,6 @@ shinyApp(ui, server)
 #    )
 #  )
 #)
-=======
-    ),
-    mainPanel(
-      h1("Analysis"),
-      br(),
-      uiOutput("varSelect"),
-      plotOutput("univariatePlot"), 
-
-    )
-  )
-)
->>>>>>> adea3543096985ec057003e646847a9b51a2f57a
 
 # Define server logic ----
 #server <- function(input, output) {
@@ -120,7 +102,6 @@ shinyApp(ui, server)
 #  
 #  observeEvent(input$univariate, {
   #code for when univariate button is pressed
-<<<<<<< HEAD
 #  output$varSelect <- renderUI({
 #    selectInput("variable", "Select a variable", choices = colnames(data()))
 #  })
@@ -130,36 +111,6 @@ shinyApp(ui, server)
 #    ggplot(data(), aes_string(x = input$variable)) +
 #      geom_histogram()
 #  })
-=======
-    
-  output$varSelect <- renderUI({
-    selectInput("variable", "Select a variable", choices = colnames(data()))
-  })
-  
-
-  output$univariatePlot <- renderPlot({
-    #histograms are plotted for continuous variables only
-    if(input$variable %in% c("age","trestbps", "chol", "thalac", "oldpeak")) { 
-    req(input$variable)
-    ggplot(data(), aes_string(x = input$variable)) +
-      geom_histogram(binwidth = 1, color = "white", fill = "blue", boundary = 0, bins = input$bins) +
-      scale_x_continuous(limits = c(min(data()[[input$variable]]), max(data()[[input$variable]])))
-    }
-    else if(input$variable %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
-      ggplot(data(), aes(x = factor(input$variable))) +
-        geom_bar(aes(group=factor(input$variable)), stat = "count", fill = "blue")
-      
-    }
-  })
-  
-  output$barplot <- renderPlot({
-    #histograms are plotted for continuous variables only
-    if(input$variable %in% c("age","trestbps", "chol", "thalac", "oldpeak")) return(NULL) 
-    #ggplot(data(), aes(x = input$variable)) +
-     #geom_bar(stat = "count")
-    barplot(input$variable, main = paste("Bar chart of",toString(input$variable)), xlab = toString(input$variable), ylab = "Count", col = "blue")
-  })
->>>>>>> adea3543096985ec057003e646847a9b51a2f57a
   
 #  }) 
   
@@ -167,10 +118,6 @@ shinyApp(ui, server)
     # bivariate analysis code
 #  })
 #}
-
-
-  
-
 
 # Run the app ----
 #shinyApp(ui = ui, server = server)
