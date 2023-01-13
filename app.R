@@ -2,6 +2,8 @@ library(shiny)
 library(readr)
 library(ggplot2)
 library(shinydashboard)
+library(RColorBrewer)
+
 #read the data 
 ui <- dashboardPage(
   dashboardHeader(),
@@ -47,9 +49,19 @@ server <- function(input, output, session) {
     #so we can differentiate our variables better <3
     if(!is.null(data())){
       req(input$uni_var_select)
-        ggplot(data(), aes_string(x = input$uni_var_select)) +
-          geom_histogram()
-    }
+          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak")) {
+            ggplot(data(), aes_string(x = input$uni_var_select)) +
+              geom_histogram(fill = "blue")
+          }
+          
+        else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
+          ggplot(data(), aes_string(x = input$uni_var_select, fill = as.factor(data()[,input$uni_var_select]))) +
+            geom_bar(stat = "count") + 
+            scale_x_discrete(labels = as.factor(data()[,input$uni_var_select])) +
+            labs(y = "Count") + 
+            scale_fill_brewer(palette = "Set1")
+          }
+  }
   })
   #MULTIVARIATE
   output$multianalysis <- renderPlot({
