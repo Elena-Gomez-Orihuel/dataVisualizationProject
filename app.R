@@ -19,7 +19,13 @@ ui <- dashboardPage(
       tabItem(tabName = "univariate", 
               h1("This is the Univariate Analysis Tab :D"),
               selectInput("uni_var_select", "Select Variable to analyze", choices = NULL, selected = NULL),
-              plotOutput("unianalysis")
+              plotOutput("unianalysis"),
+              #sliderInput("bins", "Number of bins", min = 1, max = 30, value = 10, step = 1)
+              
+              #if (input$uni_var_select %in% c('sex','cp', 'fbs', 'restecg', 'exang', 'slope', 'thal', 'target')){ 
+              #sliderInput("bins", "Number of bins", min = 1, max = 30, value = 10, step = 1)
+              #}
+              
       ),
       
       tabItem(tabName = "multivariate",
@@ -44,25 +50,50 @@ server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "uni_var_select", choices = names(data()), selected = names(data())[1])
   })
+  
+#Adding and removing the slideBar depending on the type of the selected variable (ordered or categorical)
+  observeEvent(input$uni_var_select,{
+    #with categorical variables we won't have a slideBar
+    if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
+      removeUI(selector = "div:has(> #bins)")
+      
+    }
+    
+    else if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+      removeUI(selector = "div:has(> #bins)")
+      insertUI(
+        selector = "#unianalysis", 
+        where = "afterEnd", 
+        ui = sliderInput("bins", "Number of bins", min = 1, max = 30, value = 10, step = 1)
+      )
+    }
+  })
+  
+  
+
+  
   output$unianalysis <- renderPlot({
     #this is the code i saw that you had maria, i just changed the name of the input variable 
     #so we can differentiate our variables better <3
     if(!is.null(data())){
       req(input$uni_var_select)
-          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak")) {
+          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
             ggplot(data(), aes_string(x = input$uni_var_select)) +
-              geom_histogram(fill = "blue")
-          }
+              geom_histogram(fill = "blue", binwidth = 1, boundary = 0, breaks = seq(min(data()[,input$uni_var_select]), max(data()[,input$uni_var_select]), (max(data()[,input$uni_var_select]) - min(data()[,input$uni_var_select]))/input$bins))}
           
-        else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
+        else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
           ggplot(data(), aes_string(x = input$uni_var_select, fill = as.factor(data()[,input$uni_var_select]))) +
             geom_bar(stat = "count") + 
-            scale_x_discrete(labels = as.factor(data()[,input$uni_var_select])) +
+            scale_x_discrete() +
             labs(y = "Count") + 
             scale_fill_brewer(palette = "Set1")
           }
   }
   })
+  
+  
+  
+
   #MULTIVARIATE
   output$multianalysis <- renderPlot({
     if(input$checkbox){
