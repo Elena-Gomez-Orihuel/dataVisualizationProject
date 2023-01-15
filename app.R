@@ -44,6 +44,8 @@ ui <- dashboardPage(
               selectizeInput("variables", "Select Variables:",
                              choices = NULL,
                              multiple = TRUE),
+              selectizeInput("quant_vars", "Select quantitative variables", choices = c("var1", "var2", "var3"), multiple = TRUE),
+              selectizeInput("cat_vars", "Select categorical variables", choices = c("var4", "var5", "var6"), multiple = TRUE),
               plotOutput("plot"),
               #plotOutput("scatterplot_matrix", height = "300px"),
               #plotOutput("heatmap", height = "300px"),
@@ -118,7 +120,7 @@ server <- function(input, output, session) {
   #Dummy
   observeEvent(input$file, {
     data <- read.csv(input$file$datapath, header = TRUE)
-    updateSelectizeInput(session, "variables", choices = colnames(data))
+    updateSelectizeInput(session, "variables", choices = setdiff(colnames(data), "target"))
   })
   
   data <- reactive({
@@ -153,40 +155,41 @@ server <- function(input, output, session) {
     selected_vars <- input$variables
     if (!is.null(selected_vars)) {
       # Determine if only quantitative variables were selected
-      if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak"))) {
-        print("Heatmap")
+      if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca"))) {
+        print("Scatterplot quantitative")
         output$plot <- renderPlot({
+          #my_cols <- c("#00AFBB", "#E7B800", "#FC4E07", "#FF5050","#00FF7F" , "#660099")  
           ggpairs(data()[, selected_vars])#heatmap(data()[, selected_vars], scale = "column", Colv = NA)
         })
         #output$mosaic_plot <- renderPlot({})
         #output$scatterplot_matrix <- renderPlot({})
       }
       # Determine if only categorical variables were selected
-      else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "ca"))) {
+      else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("Mosaic plot")
         output$plot <- renderPlot({
-          #mycolors <- brewer.pal(8, "Dark2")
-          #mosaicplot(table(data()[, selected_vars]), main="My mosaic plot", col=mycolors)
-          #legend("topright",legend=colnames(data()[, selected_vars]),fill=mycolors)
-          data() %>% 
-            select(selected_vars) %>% 
-            gather() %>% 
-            group_by(key, value) %>% 
-            summarise(count = n()) %>% 
-            ggplot(aes(x = key, y = value, fill = count)) +
-            geom_tile() +
-            scale_fill_gradient(low = "white", high = "blue") +
-            theme_void() + 
-            labs(title = "Heatmap of selected variables", x = "Variables", y = "Values", fill = "Count") +
-            guides(fill = guide_colorbar(title = "Count"))
+          mycolors <- brewer.pal(8, "Dark2")
+          mosaicplot(table(data()[, selected_vars]), main="My mosaic plot", col=mycolors)
+          legend("topright",legend=colnames(data()[, selected_vars]),fill=mycolors)
+          #data() %>% 
+          #  select(selected_vars) %>% 
+          # gather() %>% 
+          # group_by(key, value) %>% 
+          # summarise(count = n()) %>% 
+          # ggplot(aes(x = key, y = value, fill = count)) +
+          # geom_tile() +
+          # scale_fill_gradient(low = "white", high = "blue") +
+          # theme_void() + 
+          # labs(title = "Mosaic plot of selected variables", x = "Variables", y = "Values", fill = "Count") +
+          # guides(fill = guide_colorbar(title = "Count"))
         
         })
         #output$heatmap <- renderPlot({})
         #output$scatterplot_matrix <- renderPlot({})
       }
       # Determine if both quantitative and categorical variables were selected
-      else if (any(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak")) && 
-               any(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "ca"))) {
+      else if (any(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) && 
+               any(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("Scatterplot matrix")
         output$plot <- renderPlot({
           ggpairs(data()[, selected_vars])
