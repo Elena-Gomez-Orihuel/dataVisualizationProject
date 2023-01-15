@@ -7,6 +7,8 @@ library(GGally)
 library(RColorBrewer)
 library(dplyr)
 library(tidyr)
+library(ggthemes)
+library(psych)
 #read the data 
 ui <- dashboardPage(
   dashboardHeader(),
@@ -58,8 +60,7 @@ ui <- dashboardPage(
             #               choices = NULL,
               #               multiple = TRUE),
               selectizeInput("quant_vars", "Select quantitative variables", choices =NULL, multiple = TRUE),
-              selectizeInput("cat_vars", "Select up to 4 categorical variables", choices = NULL, multiple = TRUE, 
-                                                                            options = list(maxItems = 4)),
+              selectizeInput("cat_vars", "Select categorical variables", choices = NULL, multiple = TRUE),
               plotOutput("plot")
       ),
       tabItem(tabName = "dummy2",
@@ -118,7 +119,7 @@ server <- function(input, output, session) {
             labs(y = "Count") + 
             scale_fill_brewer(palette = "Set1")
           }
-  }
+    }
   })
   
   
@@ -149,7 +150,7 @@ server <- function(input, output, session) {
     data <- read.csv(input$file$datapath, header = TRUE)
 
     updateSelectizeInput(session, "quant_vars", choices = c("age","trestbps", "chol", "thalach", "oldpeak", "ca"))
-    updateSelectizeInput(session, "cat_vars", choices = c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target"))
+    updateSelectizeInput(session, "cat_vars", choices = c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))
 
     updateSelectizeInput(session, "variablesForTarget", choices = colnames(data))
 
@@ -217,72 +218,149 @@ server <- function(input, output, session) {
     }
   })
   
-  
+  data_subset_quant <- reactive({
+    data()[, input$quant_vars]
+  })
   #dummy NEW
   observeEvent(c(input$quant_vars, input$cat_vars), {
     #ONLY QUANTITATIVE BIVARIATE
-    if (length(input$quant_vars) == 2) {
-      if (length(input$cat_vars) == 0) {
+    print("Hello")
+    print(length(input$quant_vars))
+    print(length(input$cat_vars))
+    if ((length(input$quant_vars) == 2)&&(length(input$cat_vars) == 0)) {
+      #if (length(input$cat_vars) == 0) {
+        print("ONLY QUANTITATIVE BIVARIATE")
         output$plot <- renderPlot({
-          ggplot(data()[, input$quant_vars](), aes(x=input$quant_vars[1], y=input$quant_vars[2]))+
-            geom_point()
+          selected_vars <- strsplit(input$quant_vars, ",")[[1]]
+          selected_vars2 <- strsplit(input$quant_vars, ",")[[2]]
+          #print("selected vars")
+          #print(selected_vars)
+          #print(selected_vars2)
+          x_var <- selected_vars
+          y_var <- selected_vars2
+          
+          ggplot(data(), aes(x = data()[,x_var], y = data()[,y_var])) +
+            geom_point() +
+            geom_smooth() +
+            ggtitle(paste("Comparison of", x_var, "and", y_var)) +
+            xlab(x_var) +
+            ylab(y_var)
         })
-      }
+      #}
     }
     #ONLY CATEGORICAL BIVARIATE
-    else if (length(input$quant_vars) == 0) {
-      if (length(input$cat_vars) == 2) {
+    else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 2)) {
+      
+      #if (length(input$cat_vars) == 2) {
+        print("ONLY CATEGORICAL BIVARIATE")
         #barplot
-      }
+        output$plot <- renderPlot({
+          # Split the selected variables into x and y
+          x_var <- strsplit(input$cat_vars, ",")[[1]]
+          y_var <- strsplit(input$cat_vars, ",")[[2]]
+          
+          mycolors <- brewer.pal(8, "Dark2")
+          mosaicplot(table(data()[, input$cat_vars]), main="Mosaic plot", col=mycolors)
+          legend("topright",legend=colnames(data()[, input$cat_vars]),fill=mycolors)
+        })
+      #}
     }
     #ONLY QUANTITATIVE MULTIPLE
-    else if (length(input$quant_vars) > 2) {
-      if (length(input$cat_vars) == 0) {
-        
+    else if ((length(input$quant_vars) > 2)&&(length(input$cat_vars) == 0)) {
+      #if (length(input$cat_vars) == 0) {
+        print("ONLY QUANTITATIVE MULTIPLE")
         output$plot <- renderPlot({
           ggpairs(data()[, input$quant_vars])
         })
-      }
+      #}
     }
     #ONE QUANT ONE CAT
-    else if (length(input$quant_vars) == 1) {
-      if (length(input$cat_vars) == 1) {
+    else if ((length(input$quant_vars) == 1)&&(length(input$cat_vars) == 1)) {
+      #if (length(input$cat_vars) == 1) {
+        print("ONE QUANT ONE CAT")
         #Plot(Salary, Dept)
-      }
+        output$plot <- renderPlot({
+          x_var <- strsplit(input$quant_vars, ",")[[1]]
+          y_var <- strsplit(input$cat_vars, ",")[[1]]
+          ggplot(data(), aes(x=data()[,x_var], fill=data()[,y_var])) + 
+            geom_histogram() + 
+            facet_wrap(data()[,y_var]) + 
+            xlab(x_var) +
+            ylab(y_var)
+        })
+      #}
     }
     #TWO QUANT ONE CAT
-    else if (length(input$quant_vars) == 2) {
-      if (length(input$cat_vars) == 1) {
+    
+    else if ((length(input$quant_vars) == 2)&&(length(input$cat_vars) == 1)) {
+      #if (length(input$cat_vars) == 1) {
         #Plot(Salary, Dept)
-      }
+        print("INSIDE")
+        output$plot <- renderPlot({
+          x_var <- strsplit(input$quant_vars, ",")[[1]]
+          y_var <- strsplit(input$quant_vars, ",")[[2]]
+          z_var <- strsplit(input$cat_vars, ",")[[1]]
+          print(x_var)
+          print(y_var)
+          print(z_var)
+          ggplot(data(), aes(x=data()[,x_var], y=data()[,y_var], color=data()[,z_var])) + 
+            geom_point() + 
+            facet_wrap(~data()[,z_var], scales = "free") + 
+            xlab(x_var) +
+            ylab(y_var)
+        })
+      #}
     }
     #ONE QUANT TWO CAT
-    else if (length(input$quant_vars) == 1) {
-      if (length(input$cat_vars) == 2) {
+    else if ((length(input$quant_vars) == 1)&&(length(input$cat_vars) == 2)) {
         #Plot(Salary, Dept)
-      }
+      output$plot <- renderPlot({
+        x_var <- strsplit(input$cat_vars, ",")[[1]]
+        y_var <- strsplit(input$cat_vars, ",")[[2]]
+        z_var <- strsplit(input$quant_vars, ",")[[1]]
+        
+        ggplot(data(), aes(x = as.factor(data()[,x_var]), y = data()[,z_var],fill = data()[,y_var])) + 
+          geom_boxplot() + 
+          facet_wrap(~data()[,y_var]) + 
+          #facet_grid(cols = vars(as.character(y_var))) + 
+          xlab(x_var) + 
+          ylab(z_var)
+      })
     }
-    #TWO QUANT THREE CAT
-    else if (length(input$quant_vars) == 2) {
-      if (length(input$cat_vars) == 3) {
-        #Plot(Salary, Dept)
-      }
+    
+    #THREE CAT
+    else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 3) ) {
+      x_var <- strsplit(input$cat_vars, ",")[[1]]
+      y_var <- strsplit(input$cat_vars, ",")[[2]]
+      z_var <- strsplit(input$cat_vars, ",")[[3]]
+      output$plot <- renderPlot({
+        ggplot(data(), aes(x = data()[,x_var], fill = y_var)) + 
+          geom_bar(position = "stack") + 
+          facet_wrap(~data()[,z_var]) + 
+          xlab(x_var) + 
+          ylab(y_var) + 
+          scale_fill_brewer(palette = "Set1")
+      })
+      
     }
     #THREE CAT
-    else if (length(input$quant_vars) == 0) {
-      if (length(input$cat_vars) == 3) {
-        ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
-          geom_bar(position = "fill") + 
-          facet_wrap(~input$cat_vars[3])
-      }
+    else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 4)) {
+      
+        print("BAD4")
+        #ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
+        # geom_bar(position = "fill") + 
+        # facet_grid(.~input$cat_vars[3], input$cat_vars[4])
+      
     }
-    #THREE CAT
-    else if (length(input$quant_vars) == 0) {
-      if (length(input$cat_vars) == 4) {
-        ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
-          geom_bar(position = "fill") + 
-          facet_grid(.~input$cat_vars[3], input$cat_vars[4])
-      }
+    else if (length(input$quant_vars) + length(input$cat_vars) < 1) {
+      print("Select at least two variables")
+    }
+    else{
+      output$plot <- renderPlot({
+        
+        selected_vars <- c(input$quant_vars, input$cat_vars)
+        ggpairs(data()[, selected_vars])
+      })
     }
     
   })
@@ -315,7 +393,7 @@ server <- function(input, output, session) {
         #TODO - from bar chart to stacked bar chart (divide the numerical bins of range)
       }
       else{
-        print("None")
+        ggpairs(data()[, input$quant_vars])
       }
     }
   })
