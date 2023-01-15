@@ -15,7 +15,8 @@ ui <- dashboardPage(
       fileInput("file", "Upload your dataset"),
       menuItem("Univariate", tabName = "univariate", icon = icon("table")),
       menuItem("Multivariate", tabName = "multivariate", icon = icon("bar-chart")),
-      menuItem("Dummy", tabName = "dummy", icon = icon("bar-chart"))
+      menuItem("Dummy", tabName = "dummy", icon = icon("bar-chart")),
+      menuItem("Dummy2", tabName = "dummy2", icon = icon("circle-dot"))
     )
   ),
   dashboardBody(
@@ -51,6 +52,15 @@ ui <- dashboardPage(
               #plotOutput("heatmap", height = "300px"),
               #plotOutput("mosaic_plot"),
               #plotOutput("plot_output", height = "300px")
+      ),
+      tabItem(tabName = "dummy2",
+              h1("This is the Multivariate Analysis Tab focused on the target"),
+              h5("In this tab, you will be able to visualize multiple variables using the target variable, and 
+                 make a comparison between them"),
+              selectizeInput("variablesForTarget", "Select Variables:",
+                             choices = NULL,
+                             multiple = TRUE),
+              plotOutput("plotT")
       )
     )
   )
@@ -88,9 +98,9 @@ server <- function(input, output, session) {
   output$unianalysis <- renderPlot({
     if(!is.null(data())){
       req(input$uni_var_select)
-          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalach", "oldpeak", "ca")) {
             ggplot(data(), aes_string(x = input$uni_var_select)) +
-              geom_histogram(fill = "blue", binwidth = 1, boundary = 0, breaks = seq(min(data()[,input$uni_var_select]), max(data()[,input$uni_var_select]), (max(data()[,input$uni_var_select]) - min(data()[,input$uni_var_select]))/input$bins))}
+              geom_histogram(color = "yellow", fill = "blue", binwidth = 1, boundary = 0, breaks = seq(min(data()[,input$uni_var_select]), max(data()[,input$uni_var_select]), (max(data()[,input$uni_var_select]) - min(data()[,input$uni_var_select]))/input$bins))}
           
         else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
           ggplot(data(), aes_string(x = input$uni_var_select, fill = as.factor(data()[,input$uni_var_select]))) +
@@ -120,8 +130,13 @@ server <- function(input, output, session) {
   #Dummy
   observeEvent(input$file, {
     data <- read.csv(input$file$datapath, header = TRUE)
+
     updateSelectizeInput(session, "variables", choices = setdiff(colnames(data), "target"))
+
+    updateSelectizeInput(session, "variablesForTarget", choices = colnames(data))
+
   })
+  
   
   data <- reactive({
     inFile <- input$file
@@ -151,6 +166,7 @@ server <- function(input, output, session) {
   #  ggpairs(data()[, selected_vars])
   #})
   
+  #dummy  
   observeEvent(input$variables, {
     selected_vars <- input$variables
     if (!is.null(selected_vars)) {
@@ -202,18 +218,36 @@ server <- function(input, output, session) {
       }
     }
   })
-  
-  
-  
-    
     
     # Create the parallel coordinates plot
     #ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
     
-    
-  
-    
-  #})
+  #dummy2
+  observeEvent(input$variablesForTarget, {
+    selected_vars <- input$variablesForTarget
+    #TODO: lock "target" inside the selected_vars
+    if (!is.null(selected_vars)) {
+      # Determine if only numerical variables were selected
+      if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca"))) {
+        print("only numerical variables are selected")
+        #TODO - from box plot to nested box plot
+      }
+      # Determine if only categorical variables were selected
+      else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
+        print("only numerical categorical are selected")
+        #TODO - from Strip plot to swarn plot
+      }
+      # Determine if both quantitative and categorical variables were selected
+      else if (any(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) && 
+               any(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
+        print("both numerical and categorical variables are selected")
+        #TODO - from bar chart to stacked bar chart (divide the numerical bins of range)
+      }
+      else{
+        print("None")
+      }
+    }
+  })
 }
 
 shinyApp(ui, server)
