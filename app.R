@@ -61,6 +61,24 @@ server <- function(input, output, session) {
     updateSelectInput(session, "uni_var_select", choices = names(data()), selected = names(data())[1])
   })
   
+  #Adding and removing the slideBar depending on the type of the selected variable (ordered or categorical)
+  observeEvent(input$uni_var_select,{
+    #with categorical variables we won't have a slideBar
+    if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
+      removeUI(selector = "div:has(> #bins)")
+      
+    }
+    
+    else if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+      removeUI(selector = "div:has(> #bins)")
+      insertUI(
+        selector = "#unianalysis", 
+        where = "afterEnd", 
+        ui = sliderInput("bins", "Number of bins", min = 1, max = 30, value = 10, step = 1)
+      )
+    }
+  })
+  
   output$unianalysis <- renderPlot({
     req(input$uni_var_select)
     if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak")) {
@@ -83,26 +101,6 @@ server <- function(input, output, session) {
       #  labs(y = "Count") + 
       #  scale_fill_brewer(palette = "Set1")
     }})
-#Adding and removing the slideBar depending on the type of the selected variable (ordered or categorical)
-  observeEvent(input$uni_var_select,{
-    #with categorical variables we won't have a slideBar
-    if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
-      removeUI(selector = "div:has(> #bins)")
-      
-    }
-    
-    else if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
-      removeUI(selector = "div:has(> #bins)")
-      insertUI(
-        selector = "#unianalysis", 
-        where = "afterEnd", 
-        ui = sliderInput("bins", "Number of bins", min = 1, max = 30, value = 10, step = 1)
-      )
-    }
-  })
-  
-  
-
   
   output$unianalysis <- renderPlot({
     #this is the code i saw that you had maria, i just changed the name of the input variable 
