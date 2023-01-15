@@ -42,16 +42,25 @@ ui <- dashboardPage(
               h1("Non-Target variable analysis"),
               h5("In this tab, you will be able to visualize multiple variables that are not the target variable, and 
                  make a comparison between them"),
-              selectizeInput("variables", "Select Variables:",
-                             choices = NULL,
-                             multiple = TRUE),
-              selectizeInput("quant_vars", "Select quantitative variables", choices = c("var1", "var2", "var3"), multiple = TRUE),
-              selectizeInput("cat_vars", "Select categorical variables", choices = c("var4", "var5", "var6"), multiple = TRUE),
-              plotOutput("plot"),
-              #plotOutput("scatterplot_matrix", height = "300px"),
-              #plotOutput("heatmap", height = "300px"),
-              #plotOutput("mosaic_plot"),
-              #plotOutput("plot_output", height = "300px")
+              
+              actionButton("help", "help", icon = icon("question-circle"), width = "10%"),
+              tags$div(id = "help-modal", class = "modal", 
+                       tags$div(class = "modal-content",
+                                tags$h4("Help"),
+                                tags$p("This is some help text that can be closed by clicking the 'x' button or the background."),
+                                tags$div(class = "modal-footer", 
+                                         actionButton("close", "Close", class = "btn-flat")
+                                )
+                       )
+              ),
+              
+              #selectizeInput("variables", "Select Variables:",
+            #               choices = NULL,
+              #               multiple = TRUE),
+              selectizeInput("quant_vars", "Select quantitative variables", choices =NULL, multiple = TRUE),
+              selectizeInput("cat_vars", "Select up to 4 categorical variables", choices = NULL, multiple = TRUE, 
+                                                                            options = list(maxItems = 4)),
+              plotOutput("plot")
       ),
       tabItem(tabName = "dummy2",
               h1("This is the Multivariate Analysis Tab focused on the target"),
@@ -126,12 +135,21 @@ server <- function(input, output, session) {
       #hist(rnorm(1000))
     }
   })
-  
+  observeEvent(input$help, {
+    showModal(modalDialog(
+      title = "Help",
+      "This is some help text that can be closed by clicking the 'x' button or the background.",
+      footer = tagList(
+        modalButton("Close")
+      )
+    ))
+  })
   #Dummy
   observeEvent(input$file, {
     data <- read.csv(input$file$datapath, header = TRUE)
 
-    updateSelectizeInput(session, "variables", choices = setdiff(colnames(data), "target"))
+    updateSelectizeInput(session, "quant_vars", choices = c("age","trestbps", "chol", "thalach", "oldpeak", "ca"))
+    updateSelectizeInput(session, "cat_vars", choices = c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target"))
 
     updateSelectizeInput(session, "variablesForTarget", choices = colnames(data))
 
@@ -146,27 +164,7 @@ server <- function(input, output, session) {
     read.csv(inFile$datapath)
   })
   
-  #output$dummy <- renderPlot({
-    #selected_vars <- input$variables
-    #req(selected_vars)
-    #if (length(selected_vars) < 3) {
-    #  return("You must select at least 3 variables")
-    #}
-    #data <- data()
-    #heatmap(data[, selected_vars], scale = "column", Colv = NA)
-  
-  #})
-  
-  #output$scatterplot_matrix <- renderPlot({
-  #  selected_vars <- input$variables
-  #  req(selected_vars)
-  #  if (length(selected_vars) < 2) {
-  #    return("You must select at least 2 variables")
-  #  }
-  #  ggpairs(data()[, selected_vars])
-  #})
-  
-  #dummy  
+  #dummy  OLD
   observeEvent(input$variables, {
     selected_vars <- input$variables
     if (!is.null(selected_vars)) {
@@ -218,10 +216,83 @@ server <- function(input, output, session) {
       }
     }
   })
+  
+  
+  #dummy NEW
+  observeEvent(c(input$quant_vars, input$cat_vars), {
+    #ONLY QUANTITATIVE BIVARIATE
+    if (length(input$quant_vars) == 2) {
+      if (length(input$cat_vars) == 0) {
+        output$plot <- renderPlot({
+          ggplot(data()[, input$quant_vars](), aes(x=input$quant_vars[1], y=input$quant_vars[2]))+
+            geom_point()
+        })
+      }
+    }
+    #ONLY CATEGORICAL BIVARIATE
+    else if (length(input$quant_vars) == 0) {
+      if (length(input$cat_vars) == 2) {
+        #barplot
+      }
+    }
+    #ONLY QUANTITATIVE MULTIPLE
+    else if (length(input$quant_vars) > 2) {
+      if (length(input$cat_vars) == 0) {
+        
+        output$plot <- renderPlot({
+          ggpairs(data()[, input$quant_vars])
+        })
+      }
+    }
+    #ONE QUANT ONE CAT
+    else if (length(input$quant_vars) == 1) {
+      if (length(input$cat_vars) == 1) {
+        #Plot(Salary, Dept)
+      }
+    }
+    #TWO QUANT ONE CAT
+    else if (length(input$quant_vars) == 2) {
+      if (length(input$cat_vars) == 1) {
+        #Plot(Salary, Dept)
+      }
+    }
+    #ONE QUANT TWO CAT
+    else if (length(input$quant_vars) == 1) {
+      if (length(input$cat_vars) == 2) {
+        #Plot(Salary, Dept)
+      }
+    }
+    #TWO QUANT THREE CAT
+    else if (length(input$quant_vars) == 2) {
+      if (length(input$cat_vars) == 3) {
+        #Plot(Salary, Dept)
+      }
+    }
+    #THREE CAT
+    else if (length(input$quant_vars) == 0) {
+      if (length(input$cat_vars) == 3) {
+        ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
+          geom_bar(position = "fill") + 
+          facet_wrap(~input$cat_vars[3])
+      }
+    }
+    #THREE CAT
+    else if (length(input$quant_vars) == 0) {
+      if (length(input$cat_vars) == 4) {
+        ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
+          geom_bar(position = "fill") + 
+          facet_grid(.~input$cat_vars[3], input$cat_vars[4])
+      }
+    }
+    
+  })
     
     # Create the parallel coordinates plot
     #ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
     
+  
+  
+  
   #dummy2
   observeEvent(input$variablesForTarget, {
     selected_vars <- input$variablesForTarget
