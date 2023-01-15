@@ -80,12 +80,12 @@ server <- function(input, output, session) {
   #Adding and removing the slideBar depending on the type of the selected variable (ordered or categorical)
   observeEvent(input$uni_var_select,{
     #with categorical variables we won't have a slideBar
-    if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
+    if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
       removeUI(selector = "div:has(> #bins)")
       
     }
     
-    else if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+    else if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak")) {
       removeUI(selector = "div:has(> #bins)")
       insertUI(
         selector = "#unianalysis", 
@@ -98,11 +98,11 @@ server <- function(input, output, session) {
   output$unianalysis <- renderPlot({
     if(!is.null(data())){
       req(input$uni_var_select)
-          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalach", "oldpeak", "ca")) {
+          if(input$uni_var_select %in% c("age","trestbps", "chol", "thalach", "oldpeak")) {
             ggplot(data(), aes_string(x = input$uni_var_select)) +
               geom_histogram(color = "yellow", fill = "blue", binwidth = 1, boundary = 0, breaks = seq(min(data()[,input$uni_var_select]), max(data()[,input$uni_var_select]), (max(data()[,input$uni_var_select]) - min(data()[,input$uni_var_select]))/input$bins))}
           
-        else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal", "target")) {
+        else if(input$uni_var_select %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")) {
           ggplot(data(), aes_string(x = input$uni_var_select, fill = as.factor(data()[,input$uni_var_select]))) +
             geom_bar(stat = "count") + 
             scale_x_discrete() +
