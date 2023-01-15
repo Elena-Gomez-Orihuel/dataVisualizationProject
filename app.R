@@ -224,7 +224,7 @@ server <- function(input, output, session) {
       # Determine if only numerical variables were selected
       if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca"))) {
         print("only numerical variables are selected")
-        #TODO - nested box plot AND (botton for choise) nested violin plot
+        #TODO - from box plot to nested box plot
       }
       # Determine if only categorical variables were selected
       else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
