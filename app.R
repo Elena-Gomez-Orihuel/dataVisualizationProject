@@ -29,31 +29,32 @@ ui <- dashboardPage(
               plotOutput("multianalysis")
       ),
       tabItem(tabName = "dummy",
-              h1("This is the Dummy Analysis Tab :D"),
-              #This is going tobe oriented to have at least three variables as this is a 
-              #multivariate analysis, so i find doing univariate or bivariate useless
-              #as we already have the two other tabs
-              selectizeInput("variables", "Select Variables:", choices = NULL, multiple = TRUE
-                             ),
-              plotOutput("dummy")
+              h1("Non-Target variable analysis"),
+              h5("In this tab, you will be able to visualize multiple variables that are not the target variable, and 
+                 make a comparison between them"),
+              selectizeInput("variables", "Select Variables:",
+                             choices = NULL,
+                             multiple = TRUE),
+              plotOutput("scatterplot_matrix", height = "300px"),
+              plotOutput("heatmap", height = "300px"),
+              plotOutput("mosaic_plot"),
+              plotOutput("plot_output", height = "300px")
       )
     )
   )
 )
 
 server <- function(input, output, session) {
-  data <- reactive({
-    inFile <- input$file
-    if (is.null(inFile)) {
-      return(NULL)
-    }
-    read.csv(inFile$datapath)
-  })
+  #read the slides
+  #clustering heatmap
+  #depending on quant or categ
+  
   # UNIVARIATE
   #update the variable select input
   observe({
     updateSelectInput(session, "uni_var_select", choices = names(data()), selected = names(data())[1])
   })
+  
   output$unianalysis <- renderPlot({
     req(input$uni_var_select)
     if(input$uni_var_select %in% c("age","trestbps", "chol", "thalac", "oldpeak")) {
@@ -88,40 +89,83 @@ server <- function(input, output, session) {
       #hist(rnorm(1000))
     }
   })
+  
   #Dummy
   observeEvent(input$file, {
-    # Read the data from the uploaded file
     data <- read.csv(input$file$datapath, header = TRUE)
-    
-    # Update the selectize input widget with the column names of the new data
     updateSelectizeInput(session, "variables", choices = colnames(data))
   })
-  output$dummy <- renderPlot({
-    selected_vars <- reactive({input$variables})
-    req(selected_vars)
-    if (length(selected_vars) < 3) {
-      return("You must select at least 3 variables")
+  
+  data <- reactive({
+    inFile <- input$file
+    if (is.null(inFile)) {
+      return(NULL)
     }
+    read.csv(inFile$datapath)
+  })
+  
+  #output$dummy <- renderPlot({
+    #selected_vars <- input$variables
+    #req(selected_vars)
+    #if (length(selected_vars) < 3) {
+    #  return("You must select at least 3 variables")
+    #}
+    #data <- data()
+    #heatmap(data[, selected_vars], scale = "column", Colv = NA)
+  
+  #})
+  
+  output$scatterplot_matrix <- renderPlot({
+    selected_vars <- input$variables
+    req(selected_vars)
+    if (length(selected_vars) < 2) {
+      return("You must select at least 2 variables")
+    }
+    ggpairs(data()[, selected_vars])
+  })
+  
+  observeEvent(input$variables, {
+    selected_vars <- input$variables
+    if (!is.null(selected_vars)) {
+      # Determine if only quantitative variables were selected
+      if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak"))) {
+        print("Heatmap")
+        output$plot <- renderPlot({
+          heatmap(data()[, selected_vars], scale = "column", Colv = NA)
+        })
+      }
+      # Determine if only categorical variables were selected
+      else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target"))) {
+        print("Mosaic plot")
+        output$plot <- renderPlot({
+          mosaicplot(table(data()[, selected_vars]))
+        })
+      }
+      # Determine if both quantitative and categorical variables were selected
+      else if (any(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak")) && 
+               any(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target"))) {
+        print("Scatterplot matrix")
+        output$plot <- renderPlot({
+          ggpairs(data()[, selected_vars])
+        })
+      }
+      else{
+        print("None")
+      }
+    }
+  })
+  
+  
+  
     
-    # Define the variable groups
-    group1 <- c("age", "trestbps", "chol", "thalac", "oldpeak")
-    group2 <- c("sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal", "target")
-    
-    # Count the number of variables in each group
-    n_group1 <- length(intersect(input$variables, group1))
-    n_group2 <- length(intersect(input$variables, group2))
-    
-    
-    # Subset the data to only include the selected variables
-    data_subset <- data[, selected_vars, drop = FALSE]
     
     # Create the parallel coordinates plot
-    ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
+    #ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
     
     
   
     
-  })
+  #})
 }
 
 shinyApp(ui, server)
