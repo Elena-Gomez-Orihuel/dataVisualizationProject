@@ -53,11 +53,10 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "dummy2",
               h1("This is the Multivariate Analysis Tab focused on the target"),
-              h5("In this tab, you will be able to visualize multiple variables using the target variable, and 
-                 make a comparison between them"),
-              selectizeInput("variablesForTarget", "Select Variables:",
-                             choices = NULL,
-                             multiple = TRUE),
+              h5("In this tab, you will be able to visualize multiple variables, and use them for interact with the target variable"),
+              selectInput("variable1", "Select a column:", choices = names(data)),
+              selectInput("variable2", "Select a column:", choices = names(data)),
+              checkboxInput("isTarget", label = "Do you wants to include the target variable?", value = FALSE),
               plotOutput("plotT")
       )
     )
@@ -129,7 +128,8 @@ server <- function(input, output, session) {
   observeEvent(input$file, {
     data <- read.csv(input$file$datapath, header = TRUE)
     updateSelectizeInput(session, "variables", choices = colnames(data))
-    updateSelectizeInput(session, "variablesForTarget", choices = colnames(data))
+    updateSelectInput(session, "variable1", choices = setdiff(colnames(data), "target"))
+    updateSelectInput(session, "variable2", choices = setdiff(colnames(data), "target"))
   })
   
   
@@ -217,29 +217,78 @@ server <- function(input, output, session) {
     #ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
     
   #dummy2
-  observeEvent(input$variablesForTarget, {
-    selected_vars <- input$variablesForTarget
-    #TODO: lock "target" inside the selected_vars
-    if (!is.null(selected_vars)) {
+  observeEvent(c(input$variable1, input$variable2, input$isTarget), {
+    col1 <- input$variable1
+    col2 <- input$variable2 
+    #target <- data()[, "target"]
+    
+    if (!is.null(col1) && !is.null(col2)) {
+      
       # Determine if only numerical variables were selected
-      if (all(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca"))) {
+      if ((col1 %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) && (col2 %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca"))) {
         print("only numerical variables are selected")
-        #TODO - from box plot to nested box plot
+        # from Strip plot to swarn plot
+        
+        # strip plot
+        output$plotT <- renderPlot({
+          ggplot(data(), aes_string(x = col1, y = col2)) +
+            geom_jitter()
+        })
+        
+        # interaction
+        if(input$isTarget) {
+          
+          # swarn plot
+          print("swarn plot")
+          output$plotT <- renderPlot({
+            ggplot(data(), aes_string(x = col1, y = col2, color = "target")) +
+              geom_jitter(alpha = 0.3)
+          })
+        }
       }
+      
       # Determine if only categorical variables were selected
-      else if (all(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
-        print("only numerical categorical are selected")
-        #TODO - from Strip plot to swarn plot
+      else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
+        print("only categorical variables are selected")
+        #TODO - from box plot to nested box plot (divide the numerical bins of range)
       }
+      
       # Determine if both quantitative and categorical variables were selected
-      else if (any(selected_vars %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) && 
-               any(selected_vars %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
+      else  { #NOT WORKING
         print("both numerical and categorical variables are selected")
-        #TODO - from bar chart to stacked bar chart (divide the numerical bins of range)
+        # from bar chart to stacked bar chart
+        
+        #search for the numerical
+        if (!col2 %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+          app <- col1
+          col1 <- col2
+          col2 <- app
+        }
+          
+        
+        #bar chart
+        output$plotT <- renderPlot({
+          ggplot(data(), aes(x = col1, fill = col2)) + 
+            geom_bar(position = "fill") +
+            facet_wrap(~ "target")
+        })
+        
+        #interaction
+        #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
+        if(input$isTarget) {
+          
+          #stacked bar chart
+          print("stacked bar chart")
+          output$plotT <- renderPlot({
+            ggplot(data(), aes_string(x = col1, fill = col2)) + 
+              geom_bar(position = "fill") +
+              facet_wrap(~ "target")
+          })
+        }
       }
-      else{
-        print("None")
-      }
+    } 
+    else{
+      print("None")
     }
   })
 }
