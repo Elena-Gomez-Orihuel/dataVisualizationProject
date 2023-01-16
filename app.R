@@ -299,7 +299,7 @@ server <- function(input, output, session) {
   observeEvent(c(input$variable1, input$variable2, input$isTarget), {
     col1 <- input$variable1
     col2 <- input$variable2 
-    #target <- data()[, "target"]
+    target <- data()[, "target"]
     
     if (!is.null(col1) && !is.null(col2)) {
       
@@ -320,7 +320,7 @@ server <- function(input, output, session) {
           # swarn plot
           print("swarn plot")
           output$plotT <- renderPlot({
-            ggplot(data(), aes_string(x = col1, y = col2, color = "target")) +
+            ggplot(data(), aes_string(x = col1, y = col2, color = factor(target))) +
               geom_jitter(alpha = 0.3)
           })
         }
@@ -329,13 +329,31 @@ server <- function(input, output, session) {
       # Determine if only categorical variables were selected
       else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("only categorical variables are selected")
-        #TODO - from box plot to nested box plot (divide the numerical bins of range)
+        # from mosaic plot to scatterplot
+        
+        #mosaic plot
+        output$plotT <- renderPlot({
+          mycolors <- brewer.pal(8, "Dark2")
+          mosaicplot(table(data()[, c(col1, col2)]), main="Mosaic plot", col=mycolors)
+          legend("topright",legend=colnames(data()[, c(col1, col2)]),fill=mycolors)
+        })
+        
+        # interaction
+        if(input$isTarget) {
+          
+          # scatterplot
+          print("scatterplot")
+          output$plotT <- renderPlot({
+            ggpairs(data()[, c(col1, col2, "target")]) #<-0.7 of correlation, or >0.7
+          })
+        }
+        
       }
       
       # Determine if both quantitative and categorical variables were selected
-      else  { #NOT WORKING
+      else  {
         print("both numerical and categorical variables are selected")
-        # from bar chart to stacked bar chart
+        # from bar chart to grouped bar chart
         
         #search for the numerical
         if (!col2 %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
@@ -343,25 +361,25 @@ server <- function(input, output, session) {
           col1 <- col2
           col2 <- app
         }
-          
-        
-        #bar chart
-        output$plotT <- renderPlot({
-          ggplot(data(), aes(x = col1, fill = col2)) + 
-            geom_bar(position = "fill") +
-            facet_wrap(~ "target")
-        })
+        output$plotT <- renderPlot({  
+          ggplot(data(), aes(x=data()[,col2], fill=data()[,col1])) + 
+            geom_histogram() + 
+            facet_wrap(data()[,col1]) + 
+            xlab(col2) +
+            ylab(col1) #TODO: add the legend part
+          })
         
         #interaction
         #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
         if(input$isTarget) {
           
-          #stacked bar chart
-          print("stacked bar chart")
+          #grouped bar chart
+          print("grouped bar chart")
           output$plotT <- renderPlot({
-            ggplot(data(), aes_string(x = col1, fill = col2)) + 
-              geom_bar(position = "fill") +
-              facet_wrap(~ "target")
+            ggplot(data(), aes(x = data()[,col1], y = data()[,col2], fill = factor(target))) +
+              geom_bar(stat = "identity", position = position_dodge()) + 
+              xlab(col1) +
+              ylab(col2) #TODO: add the legend part
           })
         }
       }
