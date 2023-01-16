@@ -57,7 +57,8 @@ ui <- dashboardPage(
               #               multiple = TRUE),
               selectizeInput("quant_vars", "Select quantitative variables", choices =NULL, multiple = TRUE),
               selectizeInput("cat_vars", "Select categorical variables", choices = NULL, multiple = TRUE),
-              plotOutput("plot")
+            textOutput("text"),  
+            plotOutput("plot")
       ),
       tabItem(tabName = "dummy2",
               h1("This is the Multivariate Analysis Tab focused on the target"),
@@ -131,7 +132,30 @@ server <- function(input, output, session) {
   observeEvent(input$help, {
     showModal(modalDialog(
       title = "Help",
-      "This is some help text that can be closed by clicking the 'x' button or the background.",
+      HTML("This is a help section where you can have in mind all of the 
+      different types of plots that you can do in this tab by selecting 
+      different combinations of quantitative and categorical variables. 
+      You can select the variables in the two selectors that are just below
+      this button. If you want to delete any of the variables, click at the 
+      right side of the name of the variable, the press the delete key on 
+      you keyboard. These are the plots: <br>
+           <strong>·Quantitative Bivariate Analysis:</strong><br>
+           Select two quantitative variables.<br>
+           <strong>·Categorical Bivariate Analysis.</strong><br>
+           Select two quantitative variables.<br>
+           <strong>·Multiple Quantitative variable Analysis.</strong><br>
+           Select more than 2 quantitative variables.<br>
+           <strong>·Bivariate analysis One Quantitative One Categorical.</strong><br>
+           Select one quantitative variable and one categorical variable.<br>
+           <strong>·Multianalysis Two Quantitative One Categorical.</strong><br>
+           Select two quantitative variables and one categorical variable<br>
+           <strong>·Multianalysis One Quantitative Two Categorical.</strong><br>
+           Select one quantitative variable and two categorical variables.<br>
+           <strong>·Multianalysis Three Categorical.</strong><br>
+           Select three categorical variables.<br>
+           <strong>·Multianalysis other combinations.</strong><br>
+           Select any other combination of quantitative and categorical variables.<br>
+           "),
       footer = tagList(
         modalButton("Close")
       )
@@ -160,17 +184,26 @@ server <- function(input, output, session) {
     read.csv(inFile$datapath)
   })
   
-  
   data_subset_quant <- reactive({
     data()[, input$quant_vars]
   })
-  #dummy NEW
+  #Non-target
   observeEvent(c(input$quant_vars, input$cat_vars), {
     #ONLY QUANTITATIVE BIVARIATE
     #print("Hello")
     #print(length(input$quant_vars))
     #print(length(input$cat_vars))
-    if ((length(input$quant_vars) == 2)&&(length(input$cat_vars) == 0)) {
+    if (length(input$quant_vars) + length(input$cat_vars) < 2) {
+      output$text <- renderText({
+        selected_vars <- c(input$quant_vars, input$cat_vars)
+        if (length(selected_vars) < 2) {
+          return("Select at least two variables")
+        } else {
+          return(NULL)
+        }
+      })
+    }
+    else if ((length(input$quant_vars) == 2)&&(length(input$cat_vars) == 0)) {
       
         #print("ONLY QUANTITATIVE BIVARIATE")
         output$plot <- renderPlot({
@@ -247,9 +280,7 @@ server <- function(input, output, session) {
         y_var <- strsplit(input$cat_vars, ",")[[2]]
         z_var <- strsplit(input$quant_vars, ",")[[1]]
         
-        ggplot(data(), aes(x = as.factor(data()[,x_var]), y = data()[,z_var],
-                           
-                           )) + 
+        ggplot(data(), aes(x = as.factor(data()[,x_var]), y = data()[,z_var],)) + 
           geom_boxplot() + 
           facet_wrap(~data()[,y_var]) + 
           #facet_grid(cols = vars(as.character(y_var))) + 
@@ -264,23 +295,17 @@ server <- function(input, output, session) {
       y_var <- strsplit(input$cat_vars, ",")[[2]]
       z_var <- strsplit(input$cat_vars, ",")[[3]]
       output$plot <- renderPlot({
-        ggplot(data(), aes(x = data()[,x_var], fill = y_var)) + 
-          geom_bar(position = "stack") + 
-          facet_wrap(~data()[,z_var]) + 
+        data_table <- table(data[, c(x_var, y_var, z_var)])
+        ggplot(data(), aes(x = data()[,x_var], y = y_var, fill = Freq)) + 
+          geom_tile() + 
+          facet_wrap(~z_var) + 
           xlab(x_var) + 
           ylab(y_var) + 
-          scale_fill_brewer(palette = "Dark2")
+          scale_fill_gradient(low = "white", high = "red")
+        
+        
       })
     }
-    #THREE CAT
-    #else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 4)) {
-      
-    #print("BAD4")
-        #ggplot(data_subset(), aes_string(x = input$cat_vars[1], fill = input$cat_vars[2])) + 
-        # geom_bar(position = "fill") + 
-        # facet_grid(.~input$cat_vars[3], input$cat_vars[4])
-      
-    #}
     else if (length(input$quant_vars) + length(input$cat_vars) < 1) {
       print("Select at least two variables")
     }
@@ -292,13 +317,8 @@ server <- function(input, output, session) {
       })
     }
     
+    
   })
-    
-    # Create the parallel coordinates plot
-    #ggparcoord(data_subset, columns = NULL, groupColumn = NULL)
-    
-  
-  
   
   #dummy2
   observeEvent(c(input$variable1, input$variable2, input$isTarget), {
