@@ -118,17 +118,6 @@ server <- function(input, output, session) {
     }
   })
 
-  #MULTIVARIATE
-  output$multianalysis <- renderPlot({
-    if(input$checkbox){
-      #okey so i would do the following: select a variable and then calculate correlations
-      #with all of the other variables. Plot the three strongest correlations
-    }
-    else{
-      #Leo's code goes here :)
-      #hist(rnorm(1000))
-    }
-  })
   observeEvent(input$help, {
     showModal(modalDialog(
       title = "Help",
@@ -346,8 +335,7 @@ server <- function(input, output, session) {
           print("swarn plot")
           output$plotT <- renderPlot({
             ggplot(data(), aes_string(x = col1, y = col2, color = factor(target))) +
-              geom_jitter(alpha = 0.3) + 
-              scale_color_discrete(name = "target")
+              geom_jitter(alpha = 0.3)
           })
         }
       }
@@ -364,15 +352,8 @@ server <- function(input, output, session) {
           legend("topright",legend=colnames(data()[, c(col1, col2)]),fill=mycolors)
         })
         
-        # interaction
-        if(input$isTarget) {
-          
-          # scatterplot
-          print("scatterplot")
-          output$plotT <- renderPlot({
-            ggpairs(data()[, c(col1, col2, "target")])
-          })
-        }
+        #scatterplot
+        
       }
       
       # Determine if both quantitative and categorical variables were selected
@@ -391,11 +372,11 @@ server <- function(input, output, session) {
             geom_histogram() + 
             facet_wrap(data()[,col1]) + 
             xlab(col2) +
-            ylab(col1)
-          })
-
+            ylab(col1) 
+        })
         
         #interaction
+        #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
         if(input$isTarget) {
           
           #grouped bar chart
@@ -404,7 +385,7 @@ server <- function(input, output, session) {
             ggplot(data(), aes(x = data()[,col1], y = data()[,col2], fill = factor(target))) +
               geom_bar(stat = "identity", position = position_dodge()) + 
               xlab(col1) +
-              ylab(col2)
+              ylab(col2) #TODO: add the legend part
           })
         }
       }
