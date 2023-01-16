@@ -348,7 +348,8 @@ server <- function(input, output, session) {
           print("swarn plot")
           output$plotT <- renderPlot({
             ggplot(data(), aes_string(x = col1, y = col2, color = factor(target))) +
-              geom_jitter(alpha = 0.3)
+              geom_jitter(alpha = 0.3) + 
+              scale_color_discrete(name = "target")
           })
         }
       }
@@ -371,7 +372,7 @@ server <- function(input, output, session) {
           # scatterplot
           print("scatterplot")
           output$plotT <- renderPlot({
-            ggpairs(data()[, c(col1, col2, "target")]) #<-0.7 of correlation, or >0.7
+            ggpairs(data()[, c(col1, col2, "target")])
           })
         }
         
@@ -393,11 +394,10 @@ server <- function(input, output, session) {
             geom_histogram() + 
             facet_wrap(data()[,col1]) + 
             xlab(col2) +
-            ylab(col1) #TODO: add the legend part
+            ylab(col1)
           })
         
         #interaction
-        #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
         if(input$isTarget) {
           
           #grouped bar chart
@@ -406,7 +406,7 @@ server <- function(input, output, session) {
             ggplot(data(), aes(x = data()[,col1], y = data()[,col2], fill = factor(target))) +
               geom_bar(stat = "identity", position = position_dodge()) + 
               xlab(col1) +
-              ylab(col2) #TODO: add the legend part
+              ylab(col2)
           })
         }
       }
