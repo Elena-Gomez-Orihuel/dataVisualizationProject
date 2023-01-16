@@ -290,22 +290,24 @@ server <- function(input, output, session) {
     }
     
     #THREE CAT
-    else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 3) ) {
-      x_var <- strsplit(input$cat_vars, ",")[[1]]
-      y_var <- strsplit(input$cat_vars, ",")[[2]]
-      z_var <- strsplit(input$cat_vars, ",")[[3]]
-      output$plot <- renderPlot({
-        data_table <- table(data[, c(x_var, y_var, z_var)])
-        ggplot(data(), aes(x = data()[,x_var], y = y_var, fill = Freq)) + 
-          geom_tile() + 
-          facet_wrap(~z_var) + 
-          xlab(x_var) + 
-          ylab(y_var) + 
-          scale_fill_gradient(low = "white", high = "red")
+    #else if ((length(input$quant_vars) == 0)&&(length(input$cat_vars) == 3) ) {
+    #  x_var <- strsplit(input$cat_vars, ",")[[1]]
+    #  y_var <- strsplit(input$cat_vars, ",")[[2]]
+    #  z_var <- strsplit(input$cat_vars, ",")[[3]]
+    #  output$plot <- renderPlot({
+        #data_table <- table(data[, c(x_var, y_var, z_var)])
+        #ggplot(data(), aes(x = data()[,x_var], y = y_var, fill = Freq)) + 
+        #  geom_tile() + 
+        # facet_wrap(~z_var) + 
+         # xlab(x_var) + 
+          #ylab(y_var) + 
+        #  scale_fill_gradient(low = "white", high = "red")
+        
+     #     ggpairs(data()[, input$cat_vars])
         
         
-      })
-    }
+    #  })
+    #}
     else if (length(input$quant_vars) + length(input$cat_vars) < 1) {
       print("Select at least two variables")
     }
@@ -324,7 +326,7 @@ server <- function(input, output, session) {
   observeEvent(c(input$variable1, input$variable2, input$isTarget), {
     col1 <- input$variable1
     col2 <- input$variable2 
-    #target <- data()[, "target"]
+    target <- data()[, "target"]
     
     if (!is.null(col1) && !is.null(col2)) {
       
@@ -345,24 +347,66 @@ server <- function(input, output, session) {
           # swarn plot
           print("swarn plot")
           output$plotT <- renderPlot({
-            ggplot(data(), aes_string(x = col1, y = col2, color = "target")) +
+            ggplot(data(), aes_string(x = col1, y = col2, color = factor(target))) +
               geom_jitter(alpha = 0.3)
           })
         }
       }
       
       # Determine if only categorical variables were selected
-      else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && 
-               (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
+      else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("only categorical variables are selected")
-        #TODO - from box plot to nested box plot (divide the numerical bins of range)
+        # from mosaic plot
+        
+        #mosaic plot
+        output$plotT <- renderPlot({
+          mycolors <- brewer.pal(8, "Dark2")
+          mosaicplot(table(data()[, c(col1, col2)]), main="Mosaic plot", col=mycolors)
+          legend("topright",legend=colnames(data()[, c(col1, col2)]),fill=mycolors)
+        })
+        
+        #scatterplot
+        
       }
       
       # Determine if both quantitative and categorical variables were selected
-      else  { #NOT WORKING
+      else  {
         print("both numerical and categorical variables are selected")
-        # from bar chart to stacked bar chart{
+        # from bar chart to grouped bar chart
+        
+        #search for the numerical
+        if (!col2 %in% c("age","trestbps", "chol", "thalac", "oldpeak", "ca")) {
+          app <- col1
+          col1 <- col2
+          col2 <- app
+        }
+        output$plotT <- renderPlot({  
+          ggplot(data(), aes(x=data()[,col2], fill=data()[,col1])) + 
+            geom_histogram() + 
+            facet_wrap(data()[,col1]) + 
+            xlab(col2) +
+            ylab(col1) #TODO: add the legend part
+        })
+        
+        #interaction
+        #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
+        if(input$isTarget) {
+          
+          #grouped bar chart
+          print("grouped bar chart")
+          output$plotT <- renderPlot({
+            ggplot(data(), aes(x = data()[,col1], y = data()[,col2], fill = factor(target))) +
+              geom_bar(stat = "identity", position = position_dodge()) + 
+              xlab(col1) +
+              ylab(col2) #TODO: add the legend part
+          })
+        }
       }
-}})
-  }
+    } 
+    else{
+      print("None")
+    }
+  })
+}
+
 shinyApp(ui, server)
