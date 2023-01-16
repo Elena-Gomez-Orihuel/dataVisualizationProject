@@ -137,7 +137,7 @@ server <- function(input, output, session) {
       different combinations of quantitative and categorical variables. 
       You can select the variables in the two selectors that are just below
       this button. If you want to delete any of the variables, click at the 
-      right side of the name of the variable, the press the delete key on 
+      right side of the name of the variable, then press the delete key on 
       you keyboard. These are the plots: <br>
            <strong>·Quantitative Bivariate Analysis:</strong><br>
            Select two quantitative variables.<br>
@@ -151,8 +151,6 @@ server <- function(input, output, session) {
            Select two quantitative variables and one categorical variable<br>
            <strong>·Multianalysis One Quantitative Two Categorical.</strong><br>
            Select one quantitative variable and two categorical variables.<br>
-           <strong>·Multianalysis Three Categorical.</strong><br>
-           Select three categorical variables.<br>
            <strong>·Multianalysis other combinations.</strong><br>
            Select any other combination of quantitative and categorical variables.<br>
            "),
@@ -357,7 +355,7 @@ server <- function(input, output, session) {
       # Determine if only categorical variables were selected
       else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("only categorical variables are selected")
-        # from mosaic plot to scatterplot
+        # from mosaic plot
         
         #mosaic plot
         output$plotT <- renderPlot({
@@ -375,7 +373,6 @@ server <- function(input, output, session) {
             ggpairs(data()[, c(col1, col2, "target")])
           })
         }
-        
       }
       
       # Determine if both quantitative and categorical variables were selected
@@ -396,6 +393,7 @@ server <- function(input, output, session) {
             xlab(col2) +
             ylab(col1)
           })
+
         
         #interaction
         if(input$isTarget) {
