@@ -354,7 +354,7 @@ server <- function(input, output, session) {
       # Determine if only categorical variables were selected
       else if ((col1 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal")) && (col2 %in% c("sex","cp", "fbs", "restecg", "exang", "slope", "thal"))) {
         print("only categorical variables are selected")
-        # from mosaic plot
+        # from mosaic plot to scatterplot
         
         #mosaic plot
         output$plotT <- renderPlot({
@@ -363,7 +363,15 @@ server <- function(input, output, session) {
           legend("topright",legend=colnames(data()[, c(col1, col2)]),fill=mycolors)
         })
         
-        #scatterplot
+        # interaction
+        if(input$isTarget) {
+          
+          # scatterplot
+          print("scatterplot")
+          output$plotT <- renderPlot({
+            ggpairs(data()[, c(col1, col2, "target")]) #<-0.7 of correlation, or >0.7
+          })
+        }
         
       }
       
@@ -384,7 +392,7 @@ server <- function(input, output, session) {
             facet_wrap(data()[,col1]) + 
             xlab(col2) +
             ylab(col1) #TODO: add the legend part
-        })
+          })
         
         #interaction
         #TODO: set in box: "do you want see the graphical representation in another way?" - for different plots, we have different actions, we have to change dinamicly the botton
