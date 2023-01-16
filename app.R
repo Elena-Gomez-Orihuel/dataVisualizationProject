@@ -151,8 +151,6 @@ server <- function(input, output, session) {
            Select two quantitative variables and one categorical variable<br>
            <strong>·Multianalysis One Quantitative Two Categorical.</strong><br>
            Select one quantitative variable and two categorical variables.<br>
-           <strong>·Multianalysis Three Categorical.</strong><br>
-           Select three categorical variables.<br>
            <strong>·Multianalysis other combinations.</strong><br>
            Select any other combination of quantitative and categorical variables.<br>
            "),
